@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-set -e
+#!/usr/bin/with-contenv bash
+set -euo pipefail
 
 CONFIG_PATH="/data/config.yml"
 INIT_FLAG="/data/.initialized"
@@ -11,30 +11,39 @@ TUNNEL_NAME="$(jq -r '.tunnel_name' /data/options.json)"
 
 HOSTNAME="${SUBDOMAIN}.${DOMAIN}"
 
-export CLOUDFLARE_API_TOKEN="$CF_API_TOKEN"
+export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN}"
 
-if [ ! -f "$INIT_FLAG" ]; then
+if [ ! -f "${INIT_FLAG}" ]; then
   echo "🔐 First-time Cloudflare Tunnel setup"
 
-  cloudflared tunnel create "$TUNNEL_NAME"
+  cloudflared tunnel create "${TUNNEL_NAME}"
 
-  TUNNEL_ID=$(cloudflared tunnel list | awk "/$TUNNEL_NAME/ {print \$1}")
+  TUNNEL_ID="$(
+    cloudflared tunnel list --output json \
+      | jq -r ".[] | select(.name==\"${TUNNEL_NAME}\") | .id"
+  )"
 
-  cloudflared tunnel route dns "$TUNNEL_ID" "$HOSTNAME"
+  if [ -z "${TUNNEL_ID}" ]; then
+    echo "❌ Failed to determine tunnel ID"
+    exit 1
+  fi
 
-  cat <<EOF > "$CONFIG_PATH"
-tunnel: $TUNNEL_ID
-credentials-file: /data/$TUNNEL_ID.json
+  cloudflared tunnel route dns "${TUNNEL_ID}" "${HOSTNAME}"
+
+  cat <<EOF > "${CONFIG_PATH}"
+tunnel: ${TUNNEL_ID}
+credentials-file: /data/${TUNNEL_ID}.json
 
 ingress:
-  - hostname: $HOSTNAME
+  - hostname: ${HOSTNAME}
     service: http://homeassistant:8123
   - service: http_status:404
 EOF
 
-  touch "$INIT_FLAG"
+  touch "${INIT_FLAG}"
 
-  echo "✅ Tunnel created at https://$HOSTNAME"
+  echo "✅ Tunnel created at https://${HOSTNAME}"
 fi
 
-cloudflared tunnel --config "$CONFIG_PATH" run
+echo "🚀 Starting Cloudflare Tunnel"
+exec cloudflared tunnel --config "${CONFIG_PATH}" run

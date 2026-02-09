@@ -3,7 +3,6 @@
   "slug": "cloudflared_dns",
   "description": "Cloudflare Tunnel for Home Assistant with automatic DNS setup",
   "version": "1.0.0",
-  "image": "ghcr.io/lpr-labs/cloudflared-dns-{arch}",
   "arch": ["amd64", "aarch64", "armv7"],
   "startup": "services",
   "boot": "auto",

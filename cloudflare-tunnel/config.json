@@ -1,0 +1,24 @@
+{
+  "name": "Cloudflare Tunnel with DNS",
+  "slug": "cloudflared_dns",
+  "description": "Cloudflare Tunnel for Home Assistant with automatic DNS setup",
+  "version": "0.1.1",
+  "arch": ["amd64", "aarch64", "armv7"],
+  "startup": "services",
+  "boot": "auto",
+  "ingress": false,
+  "host_network": true,
+  "map": ["config:rw"],
+  "options": {
+    "api_token": "",
+    "domain": "",
+    "subdomain": "home",
+    "tunnel_name": "homeassistant"
+  },
+  "schema": {
+    "api_token": "password",
+    "domain": "str",
+    "subdomain": "str",
+    "tunnel_name": "str"
+  }
+}
